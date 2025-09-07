@@ -8,3 +8,9 @@
 [submodule "modules/json"]
 	path = modules/json
 	url = https://github.com/nlohmann/json.git
+[submodule "modules/osc_proto"]
+	path = modules/osc_proto
+	url = https://github.com/SamRocknrolla/NeuralPiOscProtocol.git
+[submodule "modules/NeuralPiOscProtocol"]
+	path = modules/NeuralPiOscProtocol
+	url = https://github.com/SamRocknrolla/NeuralPiOscProtocol.git

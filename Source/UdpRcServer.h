@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include "cmn/ElapsedTimer.h"
-#include "cmn/IUdpRcListener.h"
-#include "cmn/NeuralPiProto.h"
-#include "cmn/SimpleOscMsg.h"
+#include "ElapsedTimer.h"
+#include "IUdpRcListener.h"
+#include "NeuralPiProto.h"
+#include "SimpleOscMsg.h"
 
 class UdpRcServer : public juce::Thread {
 public:

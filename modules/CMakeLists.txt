@@ -9,6 +9,7 @@ add_library(juce_plugin_modules STATIC)
 add_subdirectory(json)
 #add_subdirectory(RTNeural)
 include_directories(RTNeural)
+add_subdirectory(NeuralPiOscProtocol)
 
 target_link_libraries(juce_plugin_modules
     PRIVATE
@@ -19,6 +20,7 @@ target_link_libraries(juce_plugin_modules
 	juce::juce_osc
 	nlohmann_json::nlohmann_json
 	RTNeural
+	NeuralPiOscProtocol
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

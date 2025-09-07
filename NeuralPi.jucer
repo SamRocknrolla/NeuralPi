@@ -18,15 +18,10 @@
       <FILE id="wH6oji" name="TS9_FullD.json" compile="0" resource="1" file="models/TS9_FullD.json"/>
     </GROUP>
     <GROUP id="{70CE292C-E9C5-C029-B95A-F7DF41E5F74C}" name="Source">
-      <FILE id="VgCJPH" name="AmpOSCReceiver.h" compile="0" resource="0"
-            file="Source/AmpOSCReceiver.h"/>
       <FILE id="HvJFu8" name="CabSim.h" compile="0" resource="0" file="Source/CabSim.h"/>
       <FILE id="gT1tOY" name="Delay.h" compile="0" resource="0" file="Source/Delay.h"/>
-      <FILE id="eh8aV4" name="ElapsedTimer.h" compile="0" resource="0" file="Source/cmn/ElapsedTimer.h"/>
       <FILE id="s1HQuK" name="Eq4Band.cpp" compile="1" resource="0" file="Source/Eq4Band.cpp"/>
       <FILE id="xtLEtv" name="Eq4Band.h" compile="0" resource="0" file="Source/Eq4Band.h"/>
-      <FILE id="UDk78n" name="IUdpRcListener.h" compile="0" resource="0"
-            file="Source/cmn/IUdpRcListener.h"/>
       <FILE id="hNjQV9" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="BweFTe" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
@@ -60,8 +55,8 @@
   <EXPORTFORMATS>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi"/>
-        <CONFIGURATION isDebug="0" name="Release" headerPath="/home/keith/Desktop/Projects/json-develop/include&#10;/home/keith/Desktop/Elk/RTNeural&#10;/home/keith/Desktop/Elk/RTNeural\modules\xsimd\include"
+        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi" headerPath="../../modules/NeuralPiOscProtocol/src"/>
+        <CONFIGURATION isDebug="0" name="Release" headerPath="/home/keith/Desktop/Projects/json-develop/include&#10;/home/keith/Desktop/Elk/RTNeural&#10;/home/keith/Desktop/Elk/RTNeural\modules\xsimd\include&#10;../../modules/NeuralPiOscProtocol/src"
                        defines="USE_XSIMD=1" targetName="NeuralPi"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
@@ -83,9 +78,9 @@
     </LINUX_MAKE>
     <VS2019 targetFolder="Builds/VisualStudio2019">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include"
+        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include&#10;../../modules/NeuralPiOscProtocol/src&#10;"
                        defines="USE_XSIMD=1"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include"
+        <CONFIGURATION isDebug="0" name="Release" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include&#10;../../modules/NeuralPiOscProtocol/src"
                        defines="USE_XSIMD=1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>

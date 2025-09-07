@@ -10,7 +10,6 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "AmpOSCReceiver.h"
 #include "UdpRcServer.h"
 #include <stdio.h>
 #include <fstream>
@@ -56,15 +55,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getModelSlider().getValue());
-
-            if (!oscSender.send(modelAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + modelAddressPattern);
-            }
         }
     };
     
@@ -115,18 +105,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
         if (!approximatelyEqual(irValue, sliderValue))
         {
             setParameterValue(irName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getIrSlider().getValue());
-
-            if (!oscSender.send(irAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + irAddressPattern);
-            }
         }
     };
 
@@ -188,17 +166,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getGainSlider().getValue());
-
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Gain), value);
-
-            if (!oscSender.send(gainAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + gainAddressPattern);
-            }
         }
     };
 
@@ -232,15 +200,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getMasterSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Master), value);
-
-            if (!oscSender.send(masterAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + masterAddressPattern);
-            }
         }
     };
 
@@ -273,15 +232,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getBassSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Bass), value);
-
-            if (!oscSender.send(bassAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + bassAddressPattern);
-            }
         }
     };
 
@@ -313,15 +263,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getMidSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Mid), value);
-
-            if (!oscSender.send(midAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + midAddressPattern);
-            }
         }
     };
 
@@ -353,15 +294,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getTrebleSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Treble), value);
-
-            if (!oscSender.send(trebleAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + trebleAddressPattern);
-            }
         }
     };
 
@@ -393,15 +325,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getPresenceSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Presence), value);
-
-            if (!oscSender.send(presenceAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + presenceAddressPattern);
-            }
         }
     };
 
@@ -433,15 +356,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getDelaySlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Delay), value);
-
-            if (!oscSender.send(delayAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + delayAddressPattern);
-            }
         }
     };
 
@@ -473,15 +387,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getReverbSlider().getValue());
             m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Reverb), value);
-
-            if (!oscSender.send(reverbAddressPattern, value))
-            {
-                updateOutConnectedLabel(false);
-            }
-            else
-            {
-                DBG("Sent value " + String(value) + " to AP " + reverbAddressPattern);
-            }
         }
     };
 
@@ -550,46 +455,12 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     addAndMakeVisible(ampNameField);
 
     // IP controls:
-    ipField.setEditable(true, true, true);
+    ipField.setEditable(false, false, false);
     addAndMakeVisible(ipLabel);
     addAndMakeVisible(ipField);
 
-    // Port controls:
-//    addAndMakeVisible(outPortNumberLabel);
-//    outPortNumberField.setEditable(true, true, true);
-//    addAndMakeVisible(outPortNumberField);
-//    addAndMakeVisible(outConnectedLabel);
-//
-//    addAndMakeVisible(inPortNumberLabel);
-//    inPortNumberField.setEditable(true, true, true);
-//    addAndMakeVisible(inPortNumberField);
-//    addAndMakeVisible(inConnectedLabel);
-
     // Remote controls:
-    addAndMakeVisible(outConnectedLabel);
-    outPortNumberField.setEditable(false, false, false);
-
-    // OSC messaging
-
-    getInPortNumberField().addListener(this);
-    getAmpNameField().addListener(this);
-    getOutPortNumberField().addListener(this);
-    getIPField().addListener(this);
-
-    oscReceiver.getGainValue().addListener(this);
-    oscReceiver.getMasterValue().addListener(this);
-
-    oscReceiver.getBassValue().addListener(this);
-    oscReceiver.getMidValue().addListener(this);
-    oscReceiver.getTrebleValue().addListener(this);
-    oscReceiver.getPresenceValue().addListener(this);
-
-    oscReceiver.getModelValue().addListener(this);
-    oscReceiver.getIrValue().addListener(this);
-
-    updateInConnectedLabel();
-
-    connectSender();
+    addAndMakeVisible(rcConnectedLabel);
 
     // Size of plugin GUI
     setSize(345, 455);
@@ -660,15 +531,9 @@ void NeuralPiAudioProcessorEditor::resized()
     addAndMakeVisible(ampNameField);
 
     // IP controls:
-    ipLabel.setBounds(15, 365, 150, 25);
-    ipField.setBounds(150, 365, 70, 25);
-    outConnectedLabel.setBounds(220, 365, 150, 25);
-
-    // Port controls:
-    //outPortNumberLabel.setBounds(15, 395, 150, 25);
-    //outPortNumberField.setBounds(160, 395, 75, 25);
-    //inPortNumberLabel.setBounds(15, 425, 150, 25);
-    //inPortNumberField.setBounds(160, 425, 75, 25);
+    ipLabel.setBounds(15, 365, 125, 25);
+    ipField.setBounds(140, 365, 100, 25);
+    rcConnectedLabel.setBounds(240, 365, 80, 25);
 }
 
 void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
@@ -856,17 +721,6 @@ Slider& NeuralPiAudioProcessorEditor::getIrSlider()
     return irKnob;
 }
 
-
-Label& NeuralPiAudioProcessorEditor::getOutPortNumberField()
-{
-    return outPortNumberField;
-}
-
-Label& NeuralPiAudioProcessorEditor::getInPortNumberField()
-{
-    return inPortNumberField;
-}
-
 Label& NeuralPiAudioProcessorEditor::getIPField()
 {
     return ipField;
@@ -879,183 +733,108 @@ Label& NeuralPiAudioProcessorEditor::getAmpNameField()
 
 Label& NeuralPiAudioProcessorEditor::getOutConnectedLabel()
 {
-    return outConnectedLabel;
-}
-
-Label& NeuralPiAudioProcessorEditor::getInConnectedLabel()
-{
-    return inConnectedLabel;
-}
-
-void NeuralPiAudioProcessorEditor::buildAddressPatterns()
-{
-    gainAddressPattern = "/parameter/" + ampName + "/Gain";
-    masterAddressPattern = "/parameter/" + ampName + "/Master";
-    bassAddressPattern = "/parameter/" + ampName + "/Bass";
-    midAddressPattern = "/parameter/" + ampName + "/Mid";
-    trebleAddressPattern = "/parameter/" + ampName + "/Treble";
-    presenceAddressPattern = "/parameter/" + ampName + "/Presence";
-    delayAddressPattern = "/parameter/" + ampName + "/Delay";
-    reverbAddressPattern = "/parameter/" + ampName + "/Reverb";
-    modelAddressPattern = "/parameter/" + ampName + "/Model";
-    irAddressPattern = "/parameter/" + ampName + "/Ir";
-}
-
-void NeuralPiAudioProcessorEditor::connectSender()
-{
-    //updateOutConnectedLabel(oscSender.connect(outgoingIP, outgoingPort));
-    oscSender.connect(outgoingIP, outgoingPort);
-    updateOutConnectedLabel(false);
-}
-
-void NeuralPiAudioProcessorEditor::updateOutgoingIP(String ip)
-{
-    outgoingIP = std::move(ip);
-    connectSender();
-}
-
-void NeuralPiAudioProcessorEditor::updateOutgoingPort(int port)
-{
-    outgoingPort = port;
-    connectSender();
-}
-
-void NeuralPiAudioProcessorEditor::labelTextChanged(Label* labelThatHasChanged)
-{
-    if (labelThatHasChanged == &getInPortNumberField())
-    {
-        const int newPort = getInPortNumberField().getTextValue().toString().getIntValue();
-        oscReceiver.changePort(newPort);
-        updateInConnectedLabel();
-    }
-    else if (labelThatHasChanged == &getOutPortNumberField())
-    {
-        const int newPort = getOutPortNumberField().getTextValue().toString().getIntValue();
-        updateOutgoingPort(newPort);
-    }
-    else if (labelThatHasChanged == &getIPField())
-    {
-        const String newIP = getIPField().getTextValue().toString();
-        updateOutgoingIP(newIP);
-    }
-    /*
-    else if (labelThatHasChanged == getAmpNameField())
-    {
-        ampName = getAmpNameField().getTextValue().toString();
-        buildAddressPatterns();
-        oscReceiver.updateAmpName(getAmpNameField().getTextValue().toString());
-    }
-    */
-}
-
-void NeuralPiAudioProcessorEditor::updateInConnectedLabel()
-{
-    const bool connected = oscReceiver.isConnected();
-    if (connected)
-    {
-        getInConnectedLabel().setText("(Connected)", dontSendNotification);
-    }
-    else
-    {
-        getInConnectedLabel().setText("(Disconnected!)", dontSendNotification);
-    }
+    return rcConnectedLabel;
 }
 
 void NeuralPiAudioProcessorEditor::updateOutConnectedLabel(bool connected)
 {
     if (connected)
     {
-        getOutConnectedLabel().setText("(Connected)", dontSendNotification);
+        //getOutConnectedLabel().setText("Connected", dontSendNotification);
+        rcConnectedLabel.setText("Connected", dontSendNotification);
+
     }
     else
     {
-        getOutConnectedLabel().setText("(Disconnected!)", dontSendNotification);
+        getOutConnectedLabel().setText("", dontSendNotification);
+        rcConnectedLabel.setText("", dontSendNotification);
+        ipField.setText("", dontSendNotification);
     }
 }
 
 // This callback is invoked if an OSC message has been received setting either value.
 void NeuralPiAudioProcessorEditor::valueChanged(Value& value)
 {
-    if (value.refersToSameSourceAs(oscReceiver.getGainValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getGainSlider().getValue()))
-        {
-            getGainSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getMasterValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMasterSlider().getValue()))
-        {
-            getMasterSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    if (value.refersToSameSourceAs(oscReceiver.getBassValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getBassSlider().getValue()))
-        {
-            getBassSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getMidValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMidSlider().getValue()))
-        {
-            getMidSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    if (value.refersToSameSourceAs(oscReceiver.getTrebleValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getTrebleSlider().getValue()))
-        {
-            getTrebleSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getPresenceValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getPresenceSlider().getValue()))
-        {
-            getPresenceSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    if (value.refersToSameSourceAs(oscReceiver.getDelayValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getDelaySlider().getValue()))
-        {
-            getDelaySlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getReverbValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getReverbSlider().getValue()))
-        {
-            getReverbSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getModelValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getModelSlider().getValue()))
-        {
-            getModelSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
-    else if (value.refersToSameSourceAs(oscReceiver.getIrValue()))
-    {
-        if (!approximatelyEqual(static_cast<double> (value.getValue()), getIrSlider().getValue()))
-        {
-            getIrSlider().setValue(static_cast<double> (value.getValue()),
-                NotificationType::sendNotification);
-        }
-    }
+//    if (value.refersToSameSourceAs(oscReceiver.getGainValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getGainSlider().getValue()))
+//        {
+//            getGainSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getMasterValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMasterSlider().getValue()))
+//        {
+//            getMasterSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    if (value.refersToSameSourceAs(oscReceiver.getBassValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getBassSlider().getValue()))
+//        {
+//            getBassSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getMidValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMidSlider().getValue()))
+//        {
+//            getMidSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    if (value.refersToSameSourceAs(oscReceiver.getTrebleValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getTrebleSlider().getValue()))
+//        {
+//            getTrebleSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getPresenceValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getPresenceSlider().getValue()))
+//        {
+//            getPresenceSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    if (value.refersToSameSourceAs(oscReceiver.getDelayValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getDelaySlider().getValue()))
+//        {
+//            getDelaySlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getReverbValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getReverbSlider().getValue()))
+//        {
+//            getReverbSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getModelValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getModelSlider().getValue()))
+//        {
+//            getModelSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
+//    else if (value.refersToSameSourceAs(oscReceiver.getIrValue()))
+//    {
+//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getIrSlider().getValue()))
+//        {
+//            getIrSlider().setValue(static_cast<double> (value.getValue()),
+//                NotificationType::sendNotification);
+//        }
+//    }
 }
 
 void NeuralPiAudioProcessorEditor::timerCallback()
@@ -1220,11 +999,9 @@ void NeuralPiAudioProcessorEditor::onStateChanged(IUdpRcListener::EState prevSta
     }
 }
 
-void NeuralPiAudioProcessorEditor::onBrReceived(const juce::String addr) {
-}
-
 void NeuralPiAudioProcessorEditor::onConnReceived(const juce::String addr) {
     {
+        ipField.setText(addr, NotificationType::sendNotification);
 
         for (auto i = 0; i < modelSelect.getNumItems(); i++) {
             m_rcSrv.addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), 
