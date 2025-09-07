@@ -1,3 +1,6 @@
 build/
+Builds/
 NeuralPi/
+JuceLibraryCode/
+
 *.deb

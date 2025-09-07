@@ -13,7 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 #include "AmpOSCReceiver.h"
-//#include "myLookAndFeel.h"
+#include "UdpRcServer.h"
 #include <stdlib.h>
 
 //==============================================================================
@@ -24,7 +24,8 @@ class NeuralPiAudioProcessorEditor  : public AudioProcessorEditor,
                                       private Slider::Listener,
                                       private Value::Listener,
                                       private Label::Listener,
-                                      private Timer
+                                      private Timer,
+                                      private IUdpRcServerListener
                                 
 {
 public:
@@ -37,6 +38,8 @@ public:
 
     AmpOSCReceiver oscReceiver;
     OSCSender oscSender;
+    // UDP connector
+
 
     String outgoingIP{ "127.0.0.1" };
     int outgoingPort{ 24024 };
@@ -73,6 +76,9 @@ private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     NeuralPiAudioProcessor& processor;
+
+    //std::unique_ptr < UdpRcServer> m_rcSrv;
+    UdpRcServer m_rcSrv;
 
     Image background = ImageCache::getFromMemory(BinaryData::npi_background_jpg, BinaryData::npi_background_jpgSize);
 
@@ -117,10 +123,10 @@ private:
     
     juce::String fname;
     virtual void buttonClicked(Button* button) override;
-    void modelSelectChanged();
+    void modelSelectChanged(int index);
     void loadButtonClicked();
     void updateToggleState(juce::Button* button, juce::String name);
-    void irSelectChanged();
+    void irSelectChanged(int Index);
     void loadIRClicked();
     virtual void sliderValueChanged(Slider* slider) override;
 
@@ -144,6 +150,9 @@ private:
 
     Label inConnectedLabel{ "(connected)" };
     Label outConnectedLabel{ "(connected)" };
+
+    // UDP connector
+    //std::unique_ptr<UdpRcServer> m_rcSrv{nullptr};
 
     // OSC Messages
     Slider& getGainSlider();
@@ -179,6 +188,15 @@ private:
     float getParameterValue(const String& paramId);
     void setParameterValue(const String& paramId, float value);
     void setParamKnobColor();
+
+    virtual void updateKnob(int id, float value);
+    virtual void updateModelIndex(int id, int index);
+    virtual void addModelItem(int id, juce::String itemValue, int itemIndex);
+
+    virtual void onStateChanged(IUdpRcListener::EState prevState, IUdpRcListener::EState state);
+    virtual void onBrReceived(const juce::String addr);
+
+    virtual void onConnReceived(const juce::String addr);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NeuralPiAudioProcessorEditor)
 };

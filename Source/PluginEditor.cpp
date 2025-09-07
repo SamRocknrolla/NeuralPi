@@ -11,6 +11,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "AmpOSCReceiver.h"
+#include "UdpRcServer.h"
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
@@ -19,6 +20,7 @@
 //==============================================================================
 NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p)
+    , m_rcSrv(NpRpcProto::NPRPC_SRV_PORT, NpRpcProto::NPRPC_MCAST_ADDR, *this)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to
@@ -74,7 +76,11 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
         modelSelect.addItem(jsonFile.getFileNameWithoutExtension(), c);
         c += 1;
     }
-    modelSelect.onChange = [this] {modelSelectChanged(); };
+    modelSelect.onChange = [this] { 
+        int index = modelSelect.getSelectedItemIndex();
+        modelSelectChanged(index);
+        m_rcSrv.updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), index);
+    };
     modelSelect.setSelectedItemIndex(processor.current_model_index, juce::NotificationType::dontSendNotification);
     modelSelect.setScrollWheelEnabled(true);
 
@@ -131,7 +137,11 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
         irSelect.addItem(jsonFile.getFileNameWithoutExtension(), i);
         i += 1;
     }
-    irSelect.onChange = [this] {irSelectChanged(); };
+    irSelect.onChange = [this] {
+        int index = irSelect.getSelectedItemIndex();
+        irSelectChanged(index);
+        m_rcSrv.updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir), index);
+    };
     irSelect.setSelectedItemIndex(processor.current_ir_index, juce::NotificationType::dontSendNotification);
     irSelect.setScrollWheelEnabled(true);
 
@@ -179,6 +189,8 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getGainSlider().getValue());
 
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Gain), value);
+
             if (!oscSender.send(gainAddressPattern, value))
             {
                 updateOutConnectedLabel(false);
@@ -219,6 +231,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getMasterSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Master), value);
 
             if (!oscSender.send(masterAddressPattern, value))
             {
@@ -259,6 +272,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getBassSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Bass), value);
 
             if (!oscSender.send(bassAddressPattern, value))
             {
@@ -298,6 +312,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getMidSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Mid), value);
 
             if (!oscSender.send(midAddressPattern, value))
             {
@@ -337,6 +352,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getTrebleSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Treble), value);
 
             if (!oscSender.send(trebleAddressPattern, value))
             {
@@ -376,6 +392,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getPresenceSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Presence), value);
 
             if (!oscSender.send(presenceAddressPattern, value))
             {
@@ -415,6 +432,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getDelaySlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Delay), value);
 
             if (!oscSender.send(delayAddressPattern, value))
             {
@@ -454,6 +472,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
             // create and send an OSC message with an address and a float value:
             float value = static_cast<float> (getReverbSlider().getValue());
+            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Reverb), value);
 
             if (!oscSender.send(reverbAddressPattern, value))
             {
@@ -536,16 +555,19 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     addAndMakeVisible(ipField);
 
     // Port controls:
-    addAndMakeVisible(outPortNumberLabel);
-    outPortNumberField.setEditable(true, true, true);
-    addAndMakeVisible(outPortNumberField);
+//    addAndMakeVisible(outPortNumberLabel);
+//    outPortNumberField.setEditable(true, true, true);
+//    addAndMakeVisible(outPortNumberField);
+//    addAndMakeVisible(outConnectedLabel);
+//
+//    addAndMakeVisible(inPortNumberLabel);
+//    inPortNumberField.setEditable(true, true, true);
+//    addAndMakeVisible(inPortNumberField);
+//    addAndMakeVisible(inConnectedLabel);
+
+    // Remote controls:
     addAndMakeVisible(outConnectedLabel);
-
-    addAndMakeVisible(inPortNumberLabel);
-    inPortNumberField.setEditable(true, true, true);
-    addAndMakeVisible(inPortNumberField);
-    addAndMakeVisible(inConnectedLabel);
-
+    outPortNumberField.setEditable(false, false, false);
 
     // OSC messaging
 
@@ -574,6 +596,8 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
 
     // Set gain knob color based on conditioned/snapshot model 
     setParamKnobColor();
+
+    m_rcSrv.startThread();
 }
 
 NeuralPiAudioProcessorEditor::~NeuralPiAudioProcessorEditor()
@@ -636,38 +660,37 @@ void NeuralPiAudioProcessorEditor::resized()
     addAndMakeVisible(ampNameField);
 
     // IP controls:
-    ipField.setBounds(150, 365, 100, 25);
     ipLabel.setBounds(15, 365, 150, 25);
+    ipField.setBounds(150, 365, 70, 25);
+    outConnectedLabel.setBounds(220, 365, 150, 25);
 
     // Port controls:
-    outPortNumberLabel.setBounds(15, 395, 150, 25);
-    outPortNumberField.setBounds(160, 395, 75, 25);
-    inPortNumberLabel.setBounds(15, 425, 150, 25);
-    inPortNumberField.setBounds(160, 425, 75, 25);
+    //outPortNumberLabel.setBounds(15, 395, 150, 25);
+    //outPortNumberField.setBounds(160, 395, 75, 25);
+    //inPortNumberLabel.setBounds(15, 425, 150, 25);
+    //inPortNumberField.setBounds(160, 425, 75, 25);
 }
 
-void NeuralPiAudioProcessorEditor::modelSelectChanged()
+void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
 {
-    const int selectedFileIndex = modelSelect.getSelectedItemIndex();
-    if (selectedFileIndex >= 0 && selectedFileIndex < processor.jsonFiles.size()) {
+    if (index >= 0 && index < processor.jsonFiles.size()) {
         File selectedFile = processor.userAppDataDirectory_tones.getFullPathName() + "/" + modelSelect.getText() + ".json";
         //processor.loadConfig(processor.jsonFiles[selectedFileIndex]);
         processor.loadConfig(selectedFile);
-        processor.current_model_index = selectedFileIndex;
+        processor.current_model_index = index;
     }
     auto newValue = static_cast<float>(processor.current_model_index / (processor.num_models - 1.0));
     modelKnob.setValue(newValue);
     setParamKnobColor();
 }
 
-void NeuralPiAudioProcessorEditor::irSelectChanged()
+void NeuralPiAudioProcessorEditor::irSelectChanged(int index)
 {
-    const int selectedFileIndex = irSelect.getSelectedItemIndex();
-    if (selectedFileIndex >= 0 && selectedFileIndex < processor.irFiles.size()) {
+    if (index >= 0 && index < processor.irFiles.size()) {
         File selectedFile = processor.userAppDataDirectory_irs.getFullPathName() + "/" + irSelect.getText() + ".wav";
         //processor.loadIR(processor.irFiles[selectedFileIndex]);
         processor.loadIR(selectedFile);
-        processor.current_ir_index = selectedFileIndex;
+        processor.current_ir_index = index;
     }
     auto newValue = static_cast<float>(processor.current_ir_index / (processor.num_irs - 1.0));
     irKnob.setValue(newValue);
@@ -880,15 +903,9 @@ void NeuralPiAudioProcessorEditor::buildAddressPatterns()
 
 void NeuralPiAudioProcessorEditor::connectSender()
 {
-    // specify here where to send OSC messages to: host URL and UDP port number
-    if (!oscSender.connect(outgoingIP, outgoingPort))
-    {
-        updateOutConnectedLabel(false);
-    }
-    else
-    {
-        updateOutConnectedLabel(true);
-    }
+    //updateOutConnectedLabel(oscSender.connect(outgoingIP, outgoingPort));
+    oscSender.connect(outgoingIP, outgoingPort);
+    updateOutConnectedLabel(false);
 }
 
 void NeuralPiAudioProcessorEditor::updateOutgoingIP(String ip)
@@ -1105,4 +1122,132 @@ void NeuralPiAudioProcessorEditor::setParamKnobColor()
         ampMasterKnob.setLookAndFeel(&redLookAndFeel);
     }
 
+}
+
+
+void NeuralPiAudioProcessorEditor::updateKnob(int id, float value) {
+    /* TBD: change magic numbers:
+        case 0: to case NpProto::GainKnobIdId:
+        case 1: to case NpProto::MasterKnobId:
+        . . .
+    */
+    switch (id) {
+    case static_cast<int>(NpRpcProto::ESliderId::Gain):
+        if (!approximatelyEqual(getParameterValue(gainName), value)) {
+             setParameterValue(gainName, value);
+             getGainSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Master):
+        if (!approximatelyEqual(getParameterValue(masterName), value)) {
+             setParameterValue(masterName, value);
+             getMasterSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Delay):
+        if (!approximatelyEqual(getParameterValue(delayName), value)) {
+             setParameterValue(delayName, value);
+             getDelaySlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Reverb):
+        if (!approximatelyEqual(getParameterValue(reverbName), value)) {
+             setParameterValue(reverbName, value);
+             getReverbSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Bass):
+        if (!approximatelyEqual(getParameterValue(bassName), value)) {
+             setParameterValue(bassName, value);
+             getBassSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Mid):
+        if (!approximatelyEqual(getParameterValue(midName), value)) {
+             setParameterValue(midName, value);
+             getMidSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Treble):
+        if (!approximatelyEqual(getParameterValue(trebleName), value)) {
+             setParameterValue(trebleName, value);
+             getTrebleSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+    case static_cast<int>(NpRpcProto::ESliderId::Presence):
+        if (!approximatelyEqual(getParameterValue(presenceName), value)) {
+             setParameterValue(presenceName, value);
+             getPresenceSlider().setValue(value, NotificationType::dontSendNotification);
+         }
+         break;
+     default: break;
+    }
+}
+
+void NeuralPiAudioProcessorEditor::updateModelIndex(int id, int index) {
+    switch (id) {
+    case static_cast<int>(NpRpcProto::EComboBoxId::Model):
+        modelSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification); 
+        modelSelectChanged(index);
+        break;
+    case static_cast<int>(NpRpcProto::EComboBoxId::Ir):
+        irSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification); 
+        irSelectChanged(index);
+        break;
+    default:
+        break;
+    }
+}
+
+void NeuralPiAudioProcessorEditor::addModelItem(int id, juce::String itemValue, int itemIndex) {
+}
+
+void NeuralPiAudioProcessorEditor::onStateChanged(IUdpRcListener::EState prevState, IUdpRcListener::EState state) {
+    switch (state) {
+    case IUdpRcListener::EState::Connected:
+        updateOutConnectedLabel(true);
+        break;
+    case IUdpRcListener::EState::Idle:
+    case IUdpRcListener::EState::ReqScan:
+    case IUdpRcListener::EState::Scanning:
+    case IUdpRcListener::EState::ReqConnect:
+    case IUdpRcListener::EState::Connecting:
+    case IUdpRcListener::EState::Disconnecting:
+    case IUdpRcListener::EState::Error:
+    default:
+        updateOutConnectedLabel(false);
+        break;
+    }
+}
+
+void NeuralPiAudioProcessorEditor::onBrReceived(const juce::String addr) {
+}
+
+void NeuralPiAudioProcessorEditor::onConnReceived(const juce::String addr) {
+    {
+
+        for (auto i = 0; i < modelSelect.getNumItems(); i++) {
+            m_rcSrv.addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), 
+                modelSelect.getItemText(i), modelSelect.getItemId(i));
+        }
+
+        for (auto i = 0; i < irSelect.getNumItems(); i++) {
+            m_rcSrv.addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir),
+                irSelect.getItemText(i), irSelect.getItemId(i));
+        }
+
+        m_rcSrv.finishConfig();
+
+        m_rcSrv.updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Model), modelSelect.getSelectedItemIndex());
+        m_rcSrv.updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Ir),    irSelect.getSelectedItemIndex());
+
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Gain),     ampGainKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Master),   ampMasterKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Delay),    ampDelayKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Reverb),   ampReverbKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Bass),     ampBassKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Mid),      ampMidKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Treble),   ampTrebleKnob.getValue());
+        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Presence), ampPresenceKnob.getValue());
+    }
 }

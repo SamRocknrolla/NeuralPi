@@ -22,8 +22,11 @@
             file="Source/AmpOSCReceiver.h"/>
       <FILE id="HvJFu8" name="CabSim.h" compile="0" resource="0" file="Source/CabSim.h"/>
       <FILE id="gT1tOY" name="Delay.h" compile="0" resource="0" file="Source/Delay.h"/>
+      <FILE id="eh8aV4" name="ElapsedTimer.h" compile="0" resource="0" file="Source/cmn/ElapsedTimer.h"/>
       <FILE id="s1HQuK" name="Eq4Band.cpp" compile="1" resource="0" file="Source/Eq4Band.cpp"/>
       <FILE id="xtLEtv" name="Eq4Band.h" compile="0" resource="0" file="Source/Eq4Band.h"/>
+      <FILE id="UDk78n" name="IUdpRcListener.h" compile="0" resource="0"
+            file="Source/cmn/IUdpRcListener.h"/>
       <FILE id="hNjQV9" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="BweFTe" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
@@ -34,6 +37,7 @@
       <FILE id="qzmalV" name="RTNeuralLSTM.cpp" compile="1" resource="0"
             file="Source/RTNeuralLSTM.cpp"/>
       <FILE id="Ppt8EU" name="RTNeuralLSTM.h" compile="0" resource="0" file="Source/RTNeuralLSTM.h"/>
+      <FILE id="en4sgy" name="UdpRcServer.h" compile="0" resource="0" file="Source/UdpRcServer.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -79,9 +83,9 @@
     </LINUX_MAKE>
     <VS2019 targetFolder="Builds/VisualStudio2019">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi" headerPath="C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\json\include&#10;C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\RTNeural&#10;C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\RTNeural\modules\xsimd\include"
+        <CONFIGURATION isDebug="1" name="Debug" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include"
                        defines="USE_XSIMD=1"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="NeuralPi" headerPath="C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\json\include&#10;C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\RTNeural&#10;C:\Users\tseng\Personal\mlamsk\NeuralPi\modules\RTNeural\modules\xsimd\include"
+        <CONFIGURATION isDebug="0" name="Release" targetName="NeuralPi" headerPath="../../modules/json/include&#10;../../modules/RTNeural&#10;../../modules/RTNeural/modules/xsimd/include"
                        defines="USE_XSIMD=1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
