@@ -18,13 +18,10 @@
 //==============================================================================
 /**
 */
-class NeuralPiAudioProcessorEditor  : public AudioProcessorEditor,
-                                      private Button::Listener,
-                                      private Slider::Listener,
-                                      private Value::Listener,
-                                      private Timer,
-                                      private IUdpRcServerListener
-                                
+class NeuralPiAudioProcessorEditor  : public AudioProcessorEditor
+                                    , public IUdpRcServerListener
+                                    , private Button::Listener
+                                    , private Slider::Listener                               
 {
 public:
     NeuralPiAudioProcessorEditor (NeuralPiAudioProcessor&);
@@ -33,6 +30,7 @@ public:
     //==============================================================================
     void paint (Graphics&) override;
     void resized() override;
+
 
     String ampName{ "NeuralPi" };
 
@@ -56,26 +54,38 @@ private:
     // access the processor object that created it.
     NeuralPiAudioProcessor& processor;
 
-    //std::unique_ptr < UdpRcServer> m_rcSrv;
-    UdpRcServer m_rcSrv;
+    std::unique_ptr < UdpRcServer> m_rcSrv;
+    //UdpRcServer m_rcSrv;
 
     Image background = ImageCache::getFromMemory(BinaryData::npi_background_jpg, BinaryData::npi_background_jpgSize);
 
     // Amp Widgets
     Slider ampGainKnob;
     Slider ampMasterKnob;
-    Slider modelKnob;
-    Slider irKnob;
-    //ImageButton ampOnButton;
-    //ImageButton ampLED;
-    ComboBox modelSelect;
-    ComboBox irSelect;
     Slider ampBassKnob;
     Slider ampMidKnob;
     Slider ampTrebleKnob;
     Slider ampPresenceKnob;
     Slider ampDelayKnob;
     Slider ampReverbKnob;
+
+    IdPtrMap<NpRpcProto::ESliderId, juce::Slider*, static_cast<int>(NpRpcProto::ESliderId::MAX)> m_sliderMap;
+
+    //====================================================================
+    // UI initialization
+    //====================================================================
+    void initKnobSlider(juce::Slider& slider, String sliderId, float value, SliderListener* listener);
+    void setupUI();
+
+    //ImageButton ampOnButton;
+    //ImageButton ampLED;
+    ComboBox modelSelect;
+    TextButton nextModelButton;
+    TextButton prevModelButton;
+
+    ComboBox irSelect;
+    TextButton nextIrButton;
+    TextButton prevIrButton;
 
     Label GainLabel;
     Label LevelLabel;
@@ -104,6 +114,8 @@ private:
     virtual void buttonClicked(Button* button) override;
     void modelSelectChanged(int index);
     void loadButtonClicked();
+    void setNextComboBoxItem(ComboBox& cbox);
+    void setPrevComboBoxItem(ComboBox& cbox);
     void updateToggleState(juce::Button* button, juce::String name);
     void irSelectChanged(int Index);
     void loadIRClicked();
@@ -113,8 +125,9 @@ private:
     Label ampNameLabel{ {}, "Amp Name (no spaces): " };
     Label ampNameField{ {}, "NeuralPi" };
 
-    Label ipLabel{ {}, "Remote Control IP: " };
-    Label ipField{ {}, "" };
+    Label ipLabel{ {}, "Remote Control IPv4: " };
+    Label ipField{ {}, "N/A" };
+    juce::String rcIpAddr;
 
     Label gainLabel{ {}, "Gain" };
     Label masterLabel{ {}, "Master" };
@@ -123,26 +136,7 @@ private:
 
     Label rcConnectedLabel{ "(connected)" };
 
-    // OSC Messages
-    Slider& getGainSlider();
-    Slider& getMasterSlider();
-    Slider& getModelSlider();
-    Slider& getIrSlider();
-    Slider& getBassSlider();
-    Slider& getMidSlider();
-    Slider& getTrebleSlider();
-    Slider& getPresenceSlider();
-    Slider& getDelaySlider();
-    Slider& getReverbSlider();
-
-    Label& getIPField();
-    Label& getAmpNameField();
-    Label& getOutConnectedLabel();
-
     void updateOutConnectedLabel(bool connected);
-    // This callback is invoked if an OSC message has been received setting either value.
-    void valueChanged(Value& value) override;
-    void timerCallback() override;
 
     AudioProcessorParameter* getParameter(const String& paramId);
 

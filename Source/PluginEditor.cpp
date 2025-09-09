@@ -19,7 +19,6 @@
 //==============================================================================
 NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p)
-    , m_rcSrv(NpRpcProto::NPRPC_SRV_PORT, NpRpcProto::NPRPC_MCAST_ADDR, *this)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to
@@ -27,38 +26,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     blueLookAndFeel.setColour(juce::Slider::thumbColourId, juce::Colours::aqua);
     redLookAndFeel.setColour(juce::Slider::thumbColourId, juce::Colours::red);
 
-    //addAndMakeVisible(modelKnob);
-    //ampGainKnob.setLookAndFeel(&ampSilverKnobLAF);
-    modelKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    modelKnob.setNumDecimalPlacesToDisplay(1);
-    modelKnob.addListener(this);
-    //modelKnob.setRange(0, processor.jsonFiles.size() - 1);
-    modelKnob.setRange(0.0, 1.0);
-    modelKnob.setValue(0.0);
-    modelKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    modelKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::NoTextBox, false, 50, 20);
-    modelKnob.setNumDecimalPlacesToDisplay(1);
-    modelKnob.setDoubleClickReturnValue(true, 0.0);
-
-    auto modelValue = getParameterValue(modelName);
-    Slider& modelSlider = getModelSlider();
-    modelSlider.setValue(modelValue, NotificationType::dontSendNotification);
-
-    modelKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getModelSlider().getValue());
-        const float modelValue = getParameterValue(modelName);
-
-        if (!approximatelyEqual(modelValue, sliderValue))
-        {
-            setParameterValue(modelName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getModelSlider().getValue());
-        }
-    };
-    
-    
     addAndMakeVisible(modelSelect);
     modelSelect.setColour(juce::Label::textColourId, juce::Colours::black);
     int c = 1;
@@ -69,44 +36,29 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     modelSelect.onChange = [this] { 
         int index = modelSelect.getSelectedItemIndex();
         modelSelectChanged(index);
-        m_rcSrv.updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), index);
+        if (m_rcSrv != nullptr) {
+            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), index);
+        }
     };
     modelSelect.setSelectedItemIndex(processor.current_model_index, juce::NotificationType::dontSendNotification);
     modelSelect.setScrollWheelEnabled(true);
 
+    addAndMakeVisible(nextModelButton);
+    nextModelButton.setButtonText(">");
+    nextModelButton.setColour(juce::Label::textColourId, juce::Colours::black);
+    nextModelButton.addListener(this);
+    nextModelButton.setEnabled(true);
+
+    addAndMakeVisible(prevModelButton);
+    prevModelButton.setButtonText("<");
+    prevModelButton.setColour(juce::Label::textColourId, juce::Colours::black);
+    prevModelButton.addListener(this);
+    prevModelButton.setEnabled(true);
+
     addAndMakeVisible(loadButton);
-    loadButton.setButtonText("Import Tone");
+    loadButton.setButtonText("Import Tome");
     loadButton.setColour(juce::Label::textColourId, juce::Colours::black);
     loadButton.addListener(this);
-
-
-    //addAndMakeVisible(irKnob);
-    //irKnob.setLookAndFeel(&ampSilverKnobLAF);
-    irKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    irKnob.setNumDecimalPlacesToDisplay(1);
-    irKnob.addListener(this);
-    //irKnob.setRange(0, processor.irFiles.size() - 1);
-    irKnob.setRange(0.0, 1.0);
-    irKnob.setValue(0.0);
-    irKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    irKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::NoTextBox, false, 50, 20);
-    irKnob.setNumDecimalPlacesToDisplay(1);
-    irKnob.setDoubleClickReturnValue(true, 0.0);
-
-    auto irValue = getParameterValue(irName);
-    Slider& irSlider = getIrSlider();
-    irSlider.setValue(irValue, NotificationType::dontSendNotification);
-
-    irKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getIrSlider().getValue());
-        const float irValue = getParameterValue(irName);
-
-        if (!approximatelyEqual(irValue, sliderValue))
-        {
-            setParameterValue(irName, sliderValue);
-        }
-    };
 
     addAndMakeVisible(irSelect);
     irSelect.setColour(juce::Label::textColourId, juce::Colours::black);
@@ -118,10 +70,24 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     irSelect.onChange = [this] {
         int index = irSelect.getSelectedItemIndex();
         irSelectChanged(index);
-        m_rcSrv.updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir), index);
+        if (m_rcSrv != nullptr) {
+            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir), index);
+        }
     };
     irSelect.setSelectedItemIndex(processor.current_ir_index, juce::NotificationType::dontSendNotification);
     irSelect.setScrollWheelEnabled(true);
+
+    addAndMakeVisible(nextIrButton);
+    nextIrButton.setColour(juce::Label::textColourId, juce::Colours::black);
+    nextIrButton.addListener(this);
+    nextIrButton.setButtonText(">");
+    nextIrButton.setEnabled(true);
+
+    addAndMakeVisible(prevIrButton);
+    prevIrButton.setButtonText("<");
+    prevIrButton.setColour(juce::Label::textColourId, juce::Colours::black);
+    prevIrButton.addListener(this);
+    prevIrButton.setEnabled(true);
 
     addAndMakeVisible(loadIR);
     loadIR.setButtonText("Import IR");
@@ -138,261 +104,35 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     lstmButton.setToggleState(true, juce::NotificationType::dontSendNotification);
     lstmButton.onClick = [this] { updateToggleState(&lstmButton, "LSTM");   };
   
+    initKnobSlider(ampGainKnob, gainName, getParameterValue(gainName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Gain, &ampGainKnob);
 
-    addAndMakeVisible(ampGainKnob);
-    ampGainKnob.setLookAndFeel(&blueLookAndFeel);
-    ampGainKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampGainKnob.setNumDecimalPlacesToDisplay(1);
-    ampGainKnob.addListener(this);
-    ampGainKnob.setRange(0.0, 1.0);
-    ampGainKnob.setValue(0.5);
-    ampGainKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampGainKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampGainKnob.setNumDecimalPlacesToDisplay(2);
-    ampGainKnob.setDoubleClickReturnValue(true, 0.5);
+    initKnobSlider(ampMasterKnob, masterName, getParameterValue(masterName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Master, &ampMasterKnob);
 
-    auto gainValue = getParameterValue(gainName);
-    Slider& gainSlider = getGainSlider();
-    gainSlider.setValue(gainValue, NotificationType::dontSendNotification);
+    initKnobSlider(ampBassKnob, bassName, getParameterValue(bassName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Bass, &ampBassKnob);
 
-    ampGainKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getGainSlider().getValue());
-        const float gainValue = getParameterValue(gainName);
+    initKnobSlider(ampMidKnob, midName, getParameterValue(midName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Mid, &ampMidKnob);
 
-        if (!approximatelyEqual(gainValue, sliderValue))
-        {
-            setParameterValue(gainName, sliderValue);
+    initKnobSlider(ampTrebleKnob, trebleName, getParameterValue(trebleName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Treble, &ampTrebleKnob);
 
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getGainSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Gain), value);
-        }
-    };
+    initKnobSlider(ampPresenceKnob, presenceName, getParameterValue(presenceName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Presence, &ampPresenceKnob);
 
-    addAndMakeVisible(ampMasterKnob);
-    ampMasterKnob.setLookAndFeel(&blueLookAndFeel);
-    ampMasterKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampMasterKnob.setNumDecimalPlacesToDisplay(1);
-    ampMasterKnob.addListener(this);
-    ampMasterKnob.setRange(0.0, 1.0);
-    ampMasterKnob.setValue(0.5);
-    ampMasterKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampMasterKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampMasterKnob.setNumDecimalPlacesToDisplay(2);
-    //ampMasterKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::NoTextBox, false, 50, 20 );
-    //ampMasterKnob.setNumDecimalPlacesToDisplay(1);
-    ampMasterKnob.setDoubleClickReturnValue(true, 0.5);
+    initKnobSlider(ampDelayKnob, delayName, getParameterValue(delayName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Delay, &ampDelayKnob);
 
-    auto masterValue = getParameterValue(masterName);
-    Slider& masterSlider = getMasterSlider();
-    masterSlider.setValue(masterValue, NotificationType::dontSendNotification);
+    initKnobSlider(ampReverbKnob, reverbName, getParameterValue(reverbName), this);
+    m_sliderMap.assign(NpRpcProto::ESliderId::Reverb, &ampReverbKnob);
 
-    ampMasterKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getMasterSlider().getValue());
-        const float masterValue = getParameterValue(masterName);
-
-        if (!approximatelyEqual(masterValue, sliderValue))
-        {
-            setParameterValue(masterName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getMasterSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Master), value);
-        }
-    };
-
-
-    addAndMakeVisible(ampBassKnob);
-    ampBassKnob.setLookAndFeel(&blueLookAndFeel);
-    ampBassKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampBassKnob.setNumDecimalPlacesToDisplay(1);
-    ampBassKnob.addListener(this);
-    ampBassKnob.setRange(0.0, 1.0);
-    ampBassKnob.setValue(0.5);
-    ampBassKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampBassKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampBassKnob.setNumDecimalPlacesToDisplay(2);
-    ampBassKnob.setDoubleClickReturnValue(true, 0.5);
-
-    auto bassValue = getParameterValue(bassName);
-    Slider& bassSlider = getBassSlider();
-    bassSlider.setValue(bassValue, NotificationType::dontSendNotification);
-
-    ampBassKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getBassSlider().getValue());
-        const float bassValue = getParameterValue(bassName);
-
-        if (!approximatelyEqual(bassValue, sliderValue))
-        {
-            setParameterValue(bassName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getBassSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Bass), value);
-        }
-    };
-
-    addAndMakeVisible(ampMidKnob);
-    ampMidKnob.setLookAndFeel(&blueLookAndFeel);
-    ampMidKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampMidKnob.setNumDecimalPlacesToDisplay(1);
-    ampMidKnob.addListener(this);
-    ampMidKnob.setRange(0.0, 1.0);
-    ampMidKnob.setValue(0.5);
-    ampMidKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampMidKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampMidKnob.setNumDecimalPlacesToDisplay(2);
-    ampMidKnob.setDoubleClickReturnValue(true, 0.5);
-
-    auto midValue = getParameterValue(midName);
-    Slider& midSlider = getMidSlider();
-    midSlider.setValue(midValue, NotificationType::dontSendNotification);
-
-    ampMidKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getMidSlider().getValue());
-        const float midValue = getParameterValue(midName);
-
-        if (!approximatelyEqual(midValue, sliderValue))
-        {
-            setParameterValue(midName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getMidSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Mid), value);
-        }
-    };
-
-    addAndMakeVisible(ampTrebleKnob);
-    ampTrebleKnob.setLookAndFeel(&blueLookAndFeel);
-    ampTrebleKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampTrebleKnob.setNumDecimalPlacesToDisplay(1);
-    ampTrebleKnob.addListener(this);
-    ampTrebleKnob.setRange(0.0, 1.0);
-    ampTrebleKnob.setValue(0.5);
-    ampTrebleKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampTrebleKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampTrebleKnob.setNumDecimalPlacesToDisplay(2);
-    ampTrebleKnob.setDoubleClickReturnValue(true, 0.5);
-
-    auto trebleValue = getParameterValue(trebleName);
-    Slider& trebleSlider = getTrebleSlider();
-    trebleSlider.setValue(trebleValue, NotificationType::dontSendNotification);
-
-    ampTrebleKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getTrebleSlider().getValue());
-        const float trebleValue = getParameterValue(trebleName);
-
-        if (!approximatelyEqual(trebleValue, sliderValue))
-        {
-            setParameterValue(trebleName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getTrebleSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Treble), value);
-        }
-    };
-
-    addAndMakeVisible(ampPresenceKnob);
-    ampPresenceKnob.setLookAndFeel(&blueLookAndFeel);
-    ampPresenceKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampPresenceKnob.setNumDecimalPlacesToDisplay(1);
-    ampPresenceKnob.addListener(this);
-    ampPresenceKnob.setRange(0.0, 1.0);
-    ampPresenceKnob.setValue(0.5);
-    ampPresenceKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampPresenceKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampPresenceKnob.setNumDecimalPlacesToDisplay(2);
-    ampPresenceKnob.setDoubleClickReturnValue(true, 0.5);
-
-    auto presenceValue = getParameterValue(trebleName);
-    Slider& presenceSlider = getPresenceSlider();
-    trebleSlider.setValue(presenceValue, NotificationType::dontSendNotification);
-
-    ampPresenceKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getPresenceSlider().getValue());
-        const float presenceValue = getParameterValue(presenceName);
-
-        if (!approximatelyEqual(presenceValue, sliderValue))
-        {
-            setParameterValue(presenceName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getPresenceSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Presence), value);
-        }
-    };
-
-    addAndMakeVisible(ampDelayKnob);
-    ampDelayKnob.setLookAndFeel(&blueLookAndFeel);
-    ampDelayKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampDelayKnob.setNumDecimalPlacesToDisplay(1);
-    ampDelayKnob.addListener(this);
-    ampDelayKnob.setRange(0.0, 1.0);
-    ampDelayKnob.setValue(0.0);
-    ampDelayKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampDelayKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampDelayKnob.setNumDecimalPlacesToDisplay(2);
-    ampDelayKnob.setDoubleClickReturnValue(true, 0.0);
-
-    auto delayValue = getParameterValue(delayName);
-    Slider& delaySlider = getDelaySlider();
-    delaySlider.setValue(delayValue, NotificationType::dontSendNotification);
-
-    ampDelayKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getDelaySlider().getValue());
-        const float delayValue = getParameterValue(delayName);
-
-        if (!approximatelyEqual(delayValue, sliderValue))
-        {
-            setParameterValue(delayName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getDelaySlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Delay), value);
-        }
-    };
-
-    addAndMakeVisible(ampReverbKnob);
-    ampReverbKnob.setLookAndFeel(&blueLookAndFeel);
-    ampReverbKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampReverbKnob.setNumDecimalPlacesToDisplay(1);
-    ampReverbKnob.addListener(this);
-    ampReverbKnob.setRange(0.0, 1.0);
-    ampReverbKnob.setValue(0.0);
-    ampReverbKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    ampReverbKnob.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
-    ampReverbKnob.setNumDecimalPlacesToDisplay(2);
-    ampReverbKnob.setDoubleClickReturnValue(true, 0.0);
-
-    auto reverbValue = getParameterValue(reverbName);
-    Slider& reverbSlider = getReverbSlider();
-    reverbSlider.setValue(reverbValue, NotificationType::dontSendNotification);
-
-    ampReverbKnob.onValueChange = [this]
-    {
-        const float sliderValue = static_cast<float> (getReverbSlider().getValue());
-        const float reverbValue = getParameterValue(reverbName);
-
-        if (!approximatelyEqual(reverbValue, sliderValue))
-        {
-            setParameterValue(reverbName, sliderValue);
-
-            // create and send an OSC message with an address and a float value:
-            float value = static_cast<float> (getReverbSlider().getValue());
-            m_rcSrv.updateKnob(static_cast<int32_t>(NpRpcProto::ESliderId::Reverb), value);
-        }
-    };
 
     addAndMakeVisible(GainLabel);
     GainLabel.setText("Gain", juce::NotificationType::dontSendNotification);
     GainLabel.setJustificationType(juce::Justification::centred);
+
     addAndMakeVisible(LevelLabel);
     LevelLabel.setText("Level", juce::NotificationType::dontSendNotification);
     LevelLabel.setJustificationType(juce::Justification::centred);
@@ -448,7 +188,6 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     irDropDownLabel.setFont(font);
     versionLabel.setFont(font);
 
-
     // Name controls:
     addAndMakeVisible(ampNameLabel);
     ampNameField.setEditable(true, true, true);
@@ -459,20 +198,21 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     addAndMakeVisible(ipLabel);
     addAndMakeVisible(ipField);
 
-    // Remote controls:
-    addAndMakeVisible(rcConnectedLabel);
-
     // Size of plugin GUI
     setSize(345, 455);
 
     // Set gain knob color based on conditioned/snapshot model 
     setParamKnobColor();
 
-    m_rcSrv.startThread();
+    m_rcSrv = std::make_unique<UdpRcServer>(NpRpcProto::NPRPC_SRV_PORT, NpRpcProto::NPRPC_MCAST_ADDR, *this);
+    m_rcSrv->startThread();
 }
 
 NeuralPiAudioProcessorEditor::~NeuralPiAudioProcessorEditor()
 {
+    m_rcSrv->signalThreadShouldExit();
+    m_rcSrv->stopThread(1000);
+    m_rcSrv.reset(nullptr);
 }
 
 //==============================================================================
@@ -489,51 +229,120 @@ void NeuralPiAudioProcessorEditor::paint (Graphics& g)
    
 }
 
-void NeuralPiAudioProcessorEditor::resized()
+void NeuralPiAudioProcessorEditor::resized() {
+    setupUI();
+}
+
+void NeuralPiAudioProcessorEditor::setupUI()
 {
-    // This is generally where you'll want to lay out the positions of any
-    // subcomponents in your editor..
-    modelSelect.setBounds(11, 10, 270, 25);
-    loadButton.setBounds(11, 74, 100, 25);
-    modelKnob.setBounds(140, 40, 75, 95);
+    auto area = getLocalBounds().reduced(10); // Add some margin
+    const float dpi = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->dpi;
+    const float scale = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
+    const float mm = dpi / 25.4f / scale;
+    const int rowH = mm * 8.0f;
+    const int butW = mm * 8.0f;
+    const int lblH = mm * 4.0f;
+    const int spacing = mm / 2;
 
-    irSelect.setBounds(11, 42, 270, 25);
-    loadIR.setBounds(120, 74, 100, 25);
-    irButton.setBounds(248, 42, 257, 25);
-    lstmButton.setBounds(248, 10, 257, 25);
+    FlexItem::Margin lblMargin{ mm * 2, 0.0, 0.0, 0.0 };
+    FlexItem::Margin knobMargin{ 0.0, 0.0, mm * 2, 0.0 };
+    const int knobH = area.getWidth() / 4;
+    // 1 cm in pixels
 
-    // Amp Widgets
-    ampGainKnob.setBounds(10, 120, 75, 95);
-    ampMasterKnob.setBounds(95, 120, 75, 95);
-    ampBassKnob.setBounds(10, 250, 75, 95);
-    ampMidKnob.setBounds(95, 250, 75, 95);
-    ampTrebleKnob.setBounds(180, 250, 75, 95);
-    ampPresenceKnob.setBounds(265, 250, 75, 95);
+    // === ROW 1: Label (Tone) ===
+    FlexBox labelRow1;
+    labelRow1.flexDirection = FlexBox::Direction::row;
+    labelRow1.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    labelRow1.items.add(FlexItem(toneDropDownLabel).withFlex(1));
 
-    ampDelayKnob.setBounds(180, 120, 75, 95);
-    ampReverbKnob.setBounds(265, 120, 75, 95);
+    // === ROW 2: Model Select + Load Button ===
+    FlexBox row1;
+    row1.flexDirection = FlexBox::Direction::row;
+    row1.justifyContent = FlexBox::JustifyContent::center;
+    row1.items.add(FlexItem(modelSelect).withFlex(4).withMargin(spacing));
+    row1.items.add(FlexItem(prevModelButton).withWidth(butW).withMargin(spacing));
+    row1.items.add(FlexItem(nextModelButton).withWidth(butW).withMargin(spacing));
 
-    GainLabel.setBounds(6, 108, 80, 10);
-    LevelLabel.setBounds(93, 108, 80, 10);
-    BassLabel.setBounds(6, 238, 80, 10);
-    MidLabel.setBounds(91, 238, 80, 10);
-    TrebleLabel.setBounds(178, 238, 80, 10);
-    PresenceLabel.setBounds(265, 238, 80, 10);
-    DelayLabel.setBounds(178, 108, 80, 10);
-    ReverbLabel.setBounds(265, 108, 80, 10);
+    // === ROW 3: Label (IR) ===
+    FlexBox labelRow2;
+    labelRow2.flexDirection = FlexBox::Direction::row;
+    labelRow2.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    labelRow2.items.add(FlexItem(irDropDownLabel).withFlex(1));
 
-    toneDropDownLabel.setBounds(267, 16, 80, 10);
-    irDropDownLabel.setBounds(261, 48, 80, 10);
-    versionLabel.setBounds(268, 431, 80, 10);
+    // === ROW 4: IR Select + Load IR + IR Button ===
+    FlexBox row2;
+    row2.flexDirection = FlexBox::Direction::row;
+    row2.justifyContent = FlexBox::JustifyContent::center;
+    row2.items.add(FlexItem(irSelect).withFlex(4).withMargin(spacing));
+    row2.items.add(FlexItem(prevIrButton).withWidth(butW).withMargin(spacing));
+    row2.items.add(FlexItem(nextIrButton).withWidth(butW).withMargin(spacing));
 
-    addAndMakeVisible(ampNameLabel);
-    ampNameField.setEditable(true, true, true);
-    addAndMakeVisible(ampNameField);
+    // === ROW 5: Top Knob Labels (Gain, Master, Delay, Reverb) ===
+    FlexBox labelRow3;
+    labelRow3.flexDirection = FlexBox::Direction::row;
+    labelRow3.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    labelRow3.items.add(FlexItem(GainLabel).withFlex(1));
+    labelRow3.items.add(FlexItem(LevelLabel).withFlex(1));
+    labelRow3.items.add(FlexItem(DelayLabel).withFlex(1));
+    labelRow3.items.add(FlexItem(ReverbLabel).withFlex(1));
 
-    // IP controls:
-    ipLabel.setBounds(15, 365, 125, 25);
-    ipField.setBounds(140, 365, 100, 25);
-    rcConnectedLabel.setBounds(240, 365, 80, 25);
+    // === ROW 6: Top Knob Row (Gain, Master, Delay, Reverb) ===
+    FlexBox knobRow1;
+    knobRow1.flexDirection = FlexBox::Direction::row;
+    knobRow1.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    knobRow1.items.add(FlexItem(ampGainKnob).withFlex(1));
+    knobRow1.items.add(FlexItem(ampMasterKnob).withFlex(1));
+    knobRow1.items.add(FlexItem(ampDelayKnob).withFlex(1));
+    knobRow1.items.add(FlexItem(ampReverbKnob).withFlex(1));
+
+    // === ROW 7: Bottom Knob Labels (Bass, Mid, Treble, Presence) ===
+    FlexBox labelRow4;
+    labelRow4.flexDirection = FlexBox::Direction::row;
+    labelRow4.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    labelRow4.items.add(FlexItem(BassLabel).withFlex(1));
+    labelRow4.items.add(FlexItem(MidLabel).withFlex(1));
+    labelRow4.items.add(FlexItem(TrebleLabel).withFlex(1));
+    labelRow4.items.add(FlexItem(PresenceLabel).withFlex(1));
+
+    // === ROW 8: Bottom Knob Row (Bass, Mid, Treble, Presence) ===
+    FlexBox knobRow2;
+    knobRow2.flexDirection = FlexBox::Direction::row;
+    knobRow2.justifyContent = FlexBox::JustifyContent::spaceBetween;
+    knobRow2.items.add(FlexItem(ampBassKnob).withFlex(1));
+    knobRow2.items.add(FlexItem(ampMidKnob).withFlex(1));
+    knobRow2.items.add(FlexItem(ampTrebleKnob).withFlex(1));
+    knobRow2.items.add(FlexItem(ampPresenceKnob).withFlex(1));
+
+    // === ROW 9: Connection Area ===
+    FlexBox connectionRow;
+    connectionRow.flexDirection = FlexBox::Direction::row;
+    connectionRow.items.add(FlexItem(ipLabel).withFlex(1).withMargin(spacing));
+    connectionRow.items.add(FlexItem(ipField).withFlex(1).withMargin(spacing));
+
+    // === ROW 10: Connection Area ===
+    FlexBox importRow;
+    importRow.flexDirection = FlexBox::Direction::row;
+    importRow.items.add(FlexItem(loadButton).withFlex(1));
+    importRow.items.add(FlexItem(loadIR).withFlex(1));
+
+    // 
+    // === OUTER FlexBox ===
+    FlexBox mainFlex;
+    mainFlex.flexDirection = FlexBox::Direction::column;
+
+    mainFlex.items.add(FlexItem().withHeight(lblH).withFlex(0).withMargin(spacing));
+    mainFlex.items.add(FlexItem(labelRow1).withHeight(lblH).withMargin(lblMargin));
+    mainFlex.items.add(FlexItem(row1).withHeight(rowH));
+    mainFlex.items.add(FlexItem(labelRow2).withHeight(lblH).withMargin(lblMargin));
+    mainFlex.items.add(FlexItem(row2).withHeight(rowH));
+    mainFlex.items.add(FlexItem(labelRow3).withHeight(lblH).withMargin(lblMargin));
+    mainFlex.items.add(FlexItem(knobRow1).withHeight(knobH).withMargin(knobMargin));
+    mainFlex.items.add(FlexItem(labelRow4).withHeight(lblH).withMargin(lblMargin));
+    mainFlex.items.add(FlexItem(knobRow2).withHeight(knobH).withMargin(knobMargin));
+    mainFlex.items.add(FlexItem(importRow).withHeight(rowH).withMargin(spacing));
+    mainFlex.items.add(FlexItem(connectionRow).withHeight(rowH).withMargin(spacing));
+
+    mainFlex.performLayout(area.toFloat());
 }
 
 void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
@@ -544,8 +353,7 @@ void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
         processor.loadConfig(selectedFile);
         processor.current_model_index = index;
     }
-    auto newValue = static_cast<float>(processor.current_model_index / (processor.num_models - 1.0));
-    modelKnob.setValue(newValue);
+    modelSelect.setSelectedItemIndex(processor.current_model_index);
     setParamKnobColor();
 }
 
@@ -557,8 +365,7 @@ void NeuralPiAudioProcessorEditor::irSelectChanged(int index)
         processor.loadIR(selectedFile);
         processor.current_ir_index = index;
     }
-    auto newValue = static_cast<float>(processor.current_ir_index / (processor.num_irs - 1.0));
-    irKnob.setValue(newValue);
+    irSelect.setSelectedItemIndex(processor.current_ir_index);
 }
 
 void NeuralPiAudioProcessorEditor::updateToggleState(juce::Button* button, juce::String name)
@@ -645,210 +452,102 @@ void NeuralPiAudioProcessorEditor::loadIRClicked()
 }
 
 
+void NeuralPiAudioProcessorEditor::initKnobSlider(juce::Slider& slider, juce::String sliderId, float value, SliderListener* listener)
+{
+    slider.setComponentID(sliderId);
+
+    addAndMakeVisible(slider);
+    slider.setLookAndFeel(&blueLookAndFeel);
+    slider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
+    slider.setNumDecimalPlacesToDisplay(1);
+    slider.addListener(this);
+    slider.setRange(0.0, 1.0);
+    slider.setValue(0.0);
+    slider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    slider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
+    slider.setNumDecimalPlacesToDisplay(2);
+    slider.setDoubleClickReturnValue(true, 0.0);
+
+    if (listener != nullptr)
+        slider.addListener(listener);
+
+    slider.setValue(value, NotificationType::dontSendNotification);
+}
+
 void NeuralPiAudioProcessorEditor::buttonClicked(juce::Button* button)
 {
     if (button == &loadButton) {
         loadButtonClicked();
     }
-    else
-    {
+    else if (button == &loadIR) {
         loadIRClicked();
     }
+    else if (button == &nextModelButton) {
+        setNextComboBoxItem(modelSelect);
+    }
+    else if (button == &prevModelButton) {
+        setPrevComboBoxItem(modelSelect);
+    }
+    else if (button == &nextIrButton) {
+        setNextComboBoxItem(irSelect);
+    }
+    else if (button == &prevIrButton) {
+        setPrevComboBoxItem(irSelect);
+    }
 }
+
+void NeuralPiAudioProcessorEditor::setNextComboBoxItem(ComboBox& cbox) {
+    if (cbox.getNumItems() > 1) {
+        int index = cbox.getSelectedItemIndex() + 1;
+        index = (index >= cbox.getNumItems()) ? 0 : index;
+        cbox.setSelectedItemIndex(index);
+    }
+}
+void NeuralPiAudioProcessorEditor::setPrevComboBoxItem(ComboBox& cbox) {
+    if (cbox.getNumItems() > 1) {
+        int index = cbox.getSelectedItemIndex() - 1;
+        index = (index < 0) ? cbox.getNumItems() - 1 : index;
+        cbox.setSelectedItemIndex(index);
+    }
+}
+
 
 
 void NeuralPiAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
-    if (slider == &modelKnob) {
-        if (slider->getValue() >= 0 && slider->getValue() < processor.jsonFiles.size()) {
-            modelSelect.setSelectedItemIndex(processor.getModelIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
-        }
-    } else if (slider == &irKnob) {
-        if (slider->getValue() >= 0 && slider->getValue() < processor.irFiles.size()) {
-            irSelect.setSelectedItemIndex(processor.getIrIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
+//    if (slider == &modelKnob) {
+//        if (slider->getValue() >= 0 && slider->getValue() < processor.jsonFiles.size()) {
+//            modelSelect.setSelectedItemIndex(processor.getModelIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
+//        }
+//    } else if (slider == &irKnob) {
+//        if (slider->getValue() >= 0 && slider->getValue() < processor.irFiles.size()) {
+//            irSelect.setSelectedItemIndex(processor.getIrIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
+//        }
+//    }
+    const String sliderId = slider->getComponentID();
+    if (sliderId.isNotEmpty()) {
+        if (auto* param = getParameter(sliderId)) {
+            const float sliderValue = static_cast<float> (slider->getValue());
+            const float paramValue = param->getValue();
+
+            if (!approximatelyEqual(paramValue, sliderValue))
+            {
+                setParameterValue(sliderId, sliderValue);
+
+                // create and send an OSC message with an address and a float value:
+                auto id = m_sliderMap.getId(slider);
+                if (id != std::nullopt) {
+                    m_rcSrv->updateKnob(static_cast<int32_t>(id.value()), static_cast<float>(slider->getValue()));
+                }
+            }
         }
     }
-}
-
-// OSC Messages
-Slider& NeuralPiAudioProcessorEditor::getGainSlider()
-{
-    return ampGainKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getMasterSlider()
-{
-    return ampMasterKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getBassSlider()
-{
-    return ampBassKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getMidSlider()
-{
-    return ampMidKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getTrebleSlider()
-{
-    return ampTrebleKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getPresenceSlider()
-{
-    return ampPresenceKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getDelaySlider()
-{
-    return ampDelayKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getReverbSlider()
-{
-    return ampReverbKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getModelSlider()
-{
-    return modelKnob;
-}
-
-Slider& NeuralPiAudioProcessorEditor::getIrSlider()
-{
-    return irKnob;
-}
-
-Label& NeuralPiAudioProcessorEditor::getIPField()
-{
-    return ipField;
-}
-
-Label& NeuralPiAudioProcessorEditor::getAmpNameField()
-{
-    return ampNameField;
-}
-
-Label& NeuralPiAudioProcessorEditor::getOutConnectedLabel()
-{
-    return rcConnectedLabel;
 }
 
 void NeuralPiAudioProcessorEditor::updateOutConnectedLabel(bool connected)
 {
-    if (connected)
-    {
-        //getOutConnectedLabel().setText("Connected", dontSendNotification);
-        rcConnectedLabel.setText("Connected", dontSendNotification);
-
-    }
-    else
-    {
-        getOutConnectedLabel().setText("", dontSendNotification);
-        rcConnectedLabel.setText("", dontSendNotification);
-        ipField.setText("", dontSendNotification);
-    }
-}
-
-// This callback is invoked if an OSC message has been received setting either value.
-void NeuralPiAudioProcessorEditor::valueChanged(Value& value)
-{
-//    if (value.refersToSameSourceAs(oscReceiver.getGainValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getGainSlider().getValue()))
-//        {
-//            getGainSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getMasterValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMasterSlider().getValue()))
-//        {
-//            getMasterSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    if (value.refersToSameSourceAs(oscReceiver.getBassValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getBassSlider().getValue()))
-//        {
-//            getBassSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getMidValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getMidSlider().getValue()))
-//        {
-//            getMidSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    if (value.refersToSameSourceAs(oscReceiver.getTrebleValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getTrebleSlider().getValue()))
-//        {
-//            getTrebleSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getPresenceValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getPresenceSlider().getValue()))
-//        {
-//            getPresenceSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    if (value.refersToSameSourceAs(oscReceiver.getDelayValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getDelaySlider().getValue()))
-//        {
-//            getDelaySlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getReverbValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getReverbSlider().getValue()))
-//        {
-//            getReverbSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getModelValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getModelSlider().getValue()))
-//        {
-//            getModelSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-//    else if (value.refersToSameSourceAs(oscReceiver.getIrValue()))
-//    {
-//        if (!approximatelyEqual(static_cast<double> (value.getValue()), getIrSlider().getValue()))
-//        {
-//            getIrSlider().setValue(static_cast<double> (value.getValue()),
-//                NotificationType::sendNotification);
-//        }
-//    }
-}
-
-void NeuralPiAudioProcessorEditor::timerCallback()
-{
-    getGainSlider().setValue(getParameterValue(gainName), NotificationType::dontSendNotification);
-    getMasterSlider().setValue(getParameterValue(masterName), NotificationType::dontSendNotification);
-    getBassSlider().setValue(getParameterValue(bassName), NotificationType::dontSendNotification);
-    getMidSlider().setValue(getParameterValue(midName), NotificationType::dontSendNotification);
-    getTrebleSlider().setValue(getParameterValue(trebleName), NotificationType::dontSendNotification);
-    getPresenceSlider().setValue(getParameterValue(presenceName), NotificationType::dontSendNotification);
-    getDelaySlider().setValue(getParameterValue(delayName), NotificationType::dontSendNotification);
-    getReverbSlider().setValue(getParameterValue(reverbName), NotificationType::dontSendNotification);
-    getModelSlider().setValue(getParameterValue(modelName), NotificationType::dontSendNotification);
-    getIrSlider().setValue(getParameterValue(irName), NotificationType::dontSendNotification);
+    ipField.setText(((connected)? rcIpAddr : "N/A"),
+        dontSendNotification);
 }
 
 AudioProcessorParameter* NeuralPiAudioProcessorEditor::getParameter(const String& paramId)
@@ -905,61 +604,13 @@ void NeuralPiAudioProcessorEditor::setParamKnobColor()
 
 
 void NeuralPiAudioProcessorEditor::updateKnob(int id, float value) {
-    /* TBD: change magic numbers:
-        case 0: to case NpProto::GainKnobIdId:
-        case 1: to case NpProto::MasterKnobId:
-        . . .
-    */
-    switch (id) {
-    case static_cast<int>(NpRpcProto::ESliderId::Gain):
-        if (!approximatelyEqual(getParameterValue(gainName), value)) {
-             setParameterValue(gainName, value);
-             getGainSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Master):
-        if (!approximatelyEqual(getParameterValue(masterName), value)) {
-             setParameterValue(masterName, value);
-             getMasterSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Delay):
-        if (!approximatelyEqual(getParameterValue(delayName), value)) {
-             setParameterValue(delayName, value);
-             getDelaySlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Reverb):
-        if (!approximatelyEqual(getParameterValue(reverbName), value)) {
-             setParameterValue(reverbName, value);
-             getReverbSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Bass):
-        if (!approximatelyEqual(getParameterValue(bassName), value)) {
-             setParameterValue(bassName, value);
-             getBassSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Mid):
-        if (!approximatelyEqual(getParameterValue(midName), value)) {
-             setParameterValue(midName, value);
-             getMidSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Treble):
-        if (!approximatelyEqual(getParameterValue(trebleName), value)) {
-             setParameterValue(trebleName, value);
-             getTrebleSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-    case static_cast<int>(NpRpcProto::ESliderId::Presence):
-        if (!approximatelyEqual(getParameterValue(presenceName), value)) {
-             setParameterValue(presenceName, value);
-             getPresenceSlider().setValue(value, NotificationType::dontSendNotification);
-         }
-         break;
-     default: break;
+    Slider* slider = m_sliderMap.getPtr(static_cast<NpRpcProto::ESliderId>(id));
+    if (slider != nullptr) {
+        String sliderId = slider->getComponentID();
+        if (!approximatelyEqual(getParameterValue(sliderId), value)) {
+            setParameterValue(sliderId, value);
+            slider->setValue(value, NotificationType::dontSendNotification);
+        }
     }
 }
 
@@ -1001,30 +652,30 @@ void NeuralPiAudioProcessorEditor::onStateChanged(IUdpRcListener::EState prevSta
 
 void NeuralPiAudioProcessorEditor::onConnReceived(const juce::String addr) {
     {
-        ipField.setText(addr, NotificationType::sendNotification);
+        rcIpAddr = addr;
 
         for (auto i = 0; i < modelSelect.getNumItems(); i++) {
-            m_rcSrv.addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), 
+            m_rcSrv->addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), 
                 modelSelect.getItemText(i), modelSelect.getItemId(i));
         }
 
         for (auto i = 0; i < irSelect.getNumItems(); i++) {
-            m_rcSrv.addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir),
+            m_rcSrv->addModelItem(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir),
                 irSelect.getItemText(i), irSelect.getItemId(i));
         }
 
-        m_rcSrv.finishConfig();
+        m_rcSrv->finishConfig();
 
-        m_rcSrv.updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Model), modelSelect.getSelectedItemIndex());
-        m_rcSrv.updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Ir),    irSelect.getSelectedItemIndex());
+        m_rcSrv->updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Model), modelSelect.getSelectedItemIndex());
+        m_rcSrv->updateModelIndex(static_cast<int>(NpRpcProto::EComboBoxId::Ir),    irSelect.getSelectedItemIndex());
 
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Gain),     ampGainKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Master),   ampMasterKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Delay),    ampDelayKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Reverb),   ampReverbKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Bass),     ampBassKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Mid),      ampMidKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Treble),   ampTrebleKnob.getValue());
-        m_rcSrv.updateKnob(static_cast<int>(NpRpcProto::ESliderId::Presence), ampPresenceKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Gain),     ampGainKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Master),   ampMasterKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Delay),    ampDelayKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Reverb),   ampReverbKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Bass),     ampBassKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Mid),      ampMidKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Treble),   ampTrebleKnob.getValue());
+        m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Presence), ampPresenceKnob.getValue());
     }
 }
