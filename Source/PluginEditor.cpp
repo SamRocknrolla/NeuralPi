@@ -353,6 +353,9 @@ void NeuralPiAudioProcessorEditor::irSelectChanged(int index)
         //processor.loadIR(processor.irFiles[selectedFileIndex]);
         processor.loadIR(selectedFile);
         processor.current_ir_index = index;
+
+        float newValue = static_cast<float>(processor.current_ir_index / (processor.num_irs - 1.0));
+        setParameterValue(irName, newValue);
     }
 }
 
