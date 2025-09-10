@@ -22,6 +22,7 @@ class NeuralPiAudioProcessorEditor  : public AudioProcessorEditor
                                     , public IUdpRcServerListener
                                     , private Button::Listener
                                     , private Slider::Listener                               
+                                    , private ComboBox::Listener
 {
 public:
     NeuralPiAudioProcessorEditor (NeuralPiAudioProcessor&);
@@ -111,7 +112,7 @@ private:
     juce::LookAndFeel_V4 redLookAndFeel;
     
     juce::String fname;
-    virtual void buttonClicked(Button* button) override;
+
     void modelSelectChanged(int index);
     void loadButtonClicked();
     void setNextComboBoxItem(ComboBox& cbox);
@@ -119,7 +120,10 @@ private:
     void updateToggleState(juce::Button* button, juce::String name);
     void irSelectChanged(int Index);
     void loadIRClicked();
+
+    virtual void buttonClicked(Button* button) override;
     virtual void sliderValueChanged(Slider* slider) override;
+    virtual void comboBoxChanged(ComboBox* cbox) override;
 
 
     Label ampNameLabel{ {}, "Amp Name (no spaces): " };

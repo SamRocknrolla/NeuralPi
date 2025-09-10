@@ -33,13 +33,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
         modelSelect.addItem(jsonFile.getFileNameWithoutExtension(), c);
         c += 1;
     }
-    modelSelect.onChange = [this] { 
-        int index = modelSelect.getSelectedItemIndex();
-        modelSelectChanged(index);
-        if (m_rcSrv != nullptr) {
-            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), index);
-        }
-    };
+    modelSelect.addListener(this);
     modelSelect.setSelectedItemIndex(processor.current_model_index, juce::NotificationType::dontSendNotification);
     modelSelect.setScrollWheelEnabled(true);
 
@@ -67,13 +61,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
         irSelect.addItem(jsonFile.getFileNameWithoutExtension(), i);
         i += 1;
     }
-    irSelect.onChange = [this] {
-        int index = irSelect.getSelectedItemIndex();
-        irSelectChanged(index);
-        if (m_rcSrv != nullptr) {
-            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir), index);
-        }
-    };
+    irSelect.addListener(this);
     irSelect.setSelectedItemIndex(processor.current_ir_index, juce::NotificationType::dontSendNotification);
     irSelect.setScrollWheelEnabled(true);
 
@@ -356,8 +344,6 @@ void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
         float newValue = static_cast<float>(processor.current_model_index / (processor.num_models - 1.0));
         setParameterValue(modelName, newValue);
     }
-    modelSelect.setSelectedItemIndex(processor.current_model_index);
-    setParamKnobColor();
 }
 
 void NeuralPiAudioProcessorEditor::irSelectChanged(int index)
@@ -368,7 +354,6 @@ void NeuralPiAudioProcessorEditor::irSelectChanged(int index)
         processor.loadIR(selectedFile);
         processor.current_ir_index = index;
     }
-    irSelect.setSelectedItemIndex(processor.current_ir_index);
 }
 
 void NeuralPiAudioProcessorEditor::updateToggleState(juce::Button* button, juce::String name)
@@ -518,15 +503,6 @@ void NeuralPiAudioProcessorEditor::setPrevComboBoxItem(ComboBox& cbox) {
 
 void NeuralPiAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
-//    if (slider == &modelKnob) {
-//        if (slider->getValue() >= 0 && slider->getValue() < processor.jsonFiles.size()) {
-//            modelSelect.setSelectedItemIndex(processor.getModelIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
-//        }
-//    } else if (slider == &irKnob) {
-//        if (slider->getValue() >= 0 && slider->getValue() < processor.irFiles.size()) {
-//            irSelect.setSelectedItemIndex(processor.getIrIndex(slider->getValue()), juce::NotificationType::dontSendNotification);
-//        }
-//    }
     const String sliderId = slider->getComponentID();
     if (sliderId.isNotEmpty()) {
         if (auto* param = getParameter(sliderId)) {
@@ -543,6 +519,24 @@ void NeuralPiAudioProcessorEditor::sliderValueChanged(Slider* slider)
                     m_rcSrv->updateKnob(static_cast<int32_t>(id.value()), static_cast<float>(slider->getValue()));
                 }
             }
+        }
+    }
+}
+
+void NeuralPiAudioProcessorEditor::comboBoxChanged(ComboBox* cbox) {
+    if (cbox == &modelSelect) {
+        int index = modelSelect.getSelectedItemIndex();
+        modelSelectChanged(index);
+        if (m_rcSrv != nullptr) {
+            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Model), index);
+        }
+        setParamKnobColor();
+    }
+    else if (cbox == &irSelect) {
+        int index = irSelect.getSelectedItemIndex();
+        irSelectChanged(index);
+        if (m_rcSrv != nullptr) {
+            m_rcSrv->updateModelIndex(static_cast<int32_t>(NpRpcProto::EComboBoxId::Ir), index);
         }
     }
 }
@@ -620,12 +614,14 @@ void NeuralPiAudioProcessorEditor::updateKnob(int id, float value) {
 void NeuralPiAudioProcessorEditor::updateModelIndex(int id, int index) {
     switch (id) {
     case static_cast<int>(NpRpcProto::EComboBoxId::Model):
-        modelSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification); 
         modelSelectChanged(index);
+        modelSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification);
+        setParamKnobColor();
+
         break;
     case static_cast<int>(NpRpcProto::EComboBoxId::Ir):
-        irSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification); 
         irSelectChanged(index);
+        irSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification);
         break;
     default:
         break;
