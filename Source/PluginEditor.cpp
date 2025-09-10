@@ -352,6 +352,9 @@ void NeuralPiAudioProcessorEditor::modelSelectChanged(int index)
         //processor.loadConfig(processor.jsonFiles[selectedFileIndex]);
         processor.loadConfig(selectedFile);
         processor.current_model_index = index;
+    
+        float newValue = static_cast<float>(processor.current_model_index / (processor.num_models - 1.0));
+        setParameterValue(modelName, newValue);
     }
     modelSelect.setSelectedItemIndex(processor.current_model_index);
     setParamKnobColor();
