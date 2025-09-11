@@ -108,9 +108,6 @@ private:
     ToggleButton irButton;
     ToggleButton lstmButton;
 
-    juce::LookAndFeel_V4 blueLookAndFeel;
-    juce::LookAndFeel_V4 redLookAndFeel;
-    
     juce::String fname;
 
     void modelSelectChanged(int index);

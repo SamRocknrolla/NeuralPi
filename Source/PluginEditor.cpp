@@ -20,12 +20,6 @@
 NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p)
 {
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to
-
-    blueLookAndFeel.setColour(juce::Slider::thumbColourId, juce::Colours::aqua);
-    redLookAndFeel.setColour(juce::Slider::thumbColourId, juce::Colours::red);
-
     addAndMakeVisible(modelSelect);
     modelSelect.setColour(juce::Label::textColourId, juce::Colours::black);
     int c = 1;
@@ -36,6 +30,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     modelSelect.addListener(this);
     modelSelect.setSelectedItemIndex(processor.current_model_index, juce::NotificationType::dontSendNotification);
     modelSelect.setScrollWheelEnabled(true);
+    modelSelect.setComponentID(modelName);
 
     addAndMakeVisible(nextModelButton);
     nextModelButton.setButtonText(">");
@@ -64,6 +59,7 @@ NeuralPiAudioProcessorEditor::NeuralPiAudioProcessorEditor (NeuralPiAudioProcess
     irSelect.addListener(this);
     irSelect.setSelectedItemIndex(processor.current_ir_index, juce::NotificationType::dontSendNotification);
     irSelect.setScrollWheelEnabled(true);
+    irSelect.setComponentID(irName);
 
     addAndMakeVisible(nextIrButton);
     nextIrButton.setColour(juce::Label::textColourId, juce::Colours::black);
@@ -448,7 +444,7 @@ void NeuralPiAudioProcessorEditor::initKnobSlider(juce::Slider& slider, juce::St
     slider.setComponentID(sliderId);
 
     addAndMakeVisible(slider);
-    slider.setLookAndFeel(&blueLookAndFeel);
+    slider.setColour(juce::Slider::thumbColourId, juce::Colours::aqua);
     slider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 50, 20);
     slider.setNumDecimalPlacesToDisplay(1);
     slider.addListener(this);
@@ -587,21 +583,18 @@ void NeuralPiAudioProcessorEditor::setParameterValue(const String& paramId, floa
 void NeuralPiAudioProcessorEditor::setParamKnobColor()
 {
     // If the knob is used for a parameter, change it to red
-    if (processor.params == 0) {
-        ampGainKnob.setLookAndFeel(&blueLookAndFeel);
-        ampMasterKnob.setLookAndFeel(&blueLookAndFeel);
-    }
-    else if (processor.params == 1) {
-        ampGainKnob.setLookAndFeel(&redLookAndFeel);
-        ampMasterKnob.setLookAndFeel(&blueLookAndFeel);
-    }
-    else if (processor.params == 2) {
-        ampGainKnob.setLookAndFeel(&redLookAndFeel);
-        ampMasterKnob.setLookAndFeel(&redLookAndFeel);
-    }
+    auto params = processor.params;
+    juce::Colour gainKnobColor = (processor.params > 0)? juce::Colours::red : juce::Colours::aqua;
+    juce::Colour masterKnobColor = (processor.params > 1) ? juce::Colours::red : juce::Colours::aqua;
 
+    ampGainKnob.setColour(juce::Slider::thumbColourId, gainKnobColor);
+    ampMasterKnob.setColour(juce::Slider::thumbColourId, masterKnobColor);
+
+    if (m_rcSrv != nullptr) {
+        m_rcSrv->updateKnobColor(static_cast<int>(NpRpcProto::ESliderId::Gain), gainKnobColor.getARGB());
+        m_rcSrv->updateKnobColor(static_cast<int>(NpRpcProto::ESliderId::Master), masterKnobColor.getARGB());
+    }
 }
-
 
 void NeuralPiAudioProcessorEditor::updateKnob(int id, float value) {
     Slider* slider = m_sliderMap.getPtr(static_cast<NpRpcProto::ESliderId>(id));
@@ -617,14 +610,14 @@ void NeuralPiAudioProcessorEditor::updateKnob(int id, float value) {
 void NeuralPiAudioProcessorEditor::updateModelIndex(int id, int index) {
     switch (id) {
     case static_cast<int>(NpRpcProto::EComboBoxId::Model):
-        modelSelectChanged(index);
         modelSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification);
+        modelSelectChanged(index);
         setParamKnobColor();
 
         break;
     case static_cast<int>(NpRpcProto::EComboBoxId::Ir):
-        irSelectChanged(index);
         irSelect.setSelectedItemIndex(index, NotificationType::dontSendNotification);
+        irSelectChanged(index);
         break;
     default:
         break;
@@ -679,5 +672,8 @@ void NeuralPiAudioProcessorEditor::onConnReceived(const juce::String addr) {
         m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Mid),      ampMidKnob.getValue());
         m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Treble),   ampTrebleKnob.getValue());
         m_rcSrv->updateKnob(static_cast<int>(NpRpcProto::ESliderId::Presence), ampPresenceKnob.getValue());
+
+        m_rcSrv->updateKnobColor(static_cast<int>(NpRpcProto::ESliderId::Gain), ampGainKnob.findColour(juce::Slider::thumbColourId).getARGB());
+        m_rcSrv->updateKnobColor(static_cast<int>(NpRpcProto::ESliderId::Master), ampMasterKnob.findColour(juce::Slider::thumbColourId).getARGB());
     }
 }

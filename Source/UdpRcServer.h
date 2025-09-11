@@ -220,6 +220,12 @@ public:
         }
     }
 
+    void updateKnobColor(int id, uint32 value) {
+        if (m_state.get() == IUdpRcListener::EState::Connected) {
+            sendUdp(NpRpcProto::genUpdateKnobColorMsg(m_sessionId, id, value));
+        }
+    }
+
     void updateModelIndex(int id, int index) {
         if (m_state.get() == IUdpRcListener::EState::Connected) {
             sendUdp(NpRpcProto::genSelectModelMsg(m_sessionId, id, index));
